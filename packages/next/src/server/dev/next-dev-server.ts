@@ -281,7 +281,7 @@ export default class DevServer extends Server {
       .traceAsyncFn(() => this.runInstrumentationHookIfAvailable())
     await this.matchers.reload()
 
-    if (process.env.NEXT_PRECOMPILE_ROUTES === '1') {
+    if (process.env.NEXT_DEV_PRECOMPILE_ROUTES === '1') {
       await this.precompileRoutes()
     }
 
