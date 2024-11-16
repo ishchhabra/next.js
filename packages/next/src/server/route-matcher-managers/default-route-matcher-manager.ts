@@ -18,7 +18,7 @@ interface RouteMatchers {
 
 export class DefaultRouteMatcherManager implements RouteMatcherManager {
   private readonly providers: Array<RouteMatcherProvider> = []
-  protected readonly matchers: RouteMatchers = {
+  public readonly matchers: RouteMatchers = {
     static: [],
     dynamic: [],
     duplicates: {},

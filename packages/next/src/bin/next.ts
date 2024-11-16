@@ -65,8 +65,8 @@ class NextRootCommand extends Command {
           process.env.NODE_ENV === 'development'
             ? ['start', 'build']
             : process.env.NODE_ENV === 'production'
-              ? ['dev']
-              : []
+            ? ['dev']
+            : []
 
         if (isNotStandard || shouldWarnCommands.includes(commandName)) {
           warn(NON_STANDARD_NODE_ENV)
@@ -197,6 +197,10 @@ program
   .option(
     '--experimental-upload-trace, <traceUrl>',
     'Reports a subset of the debugging trace to a remote HTTP URL. Includes sensitive data.'
+  )
+  .option(
+    '--precompile-routes',
+    'Precompiles all routes before starting the server in development mode.'
   )
   .action(
     (directory: string, options: NextDevOptions, { _optionValueSources }) => {

@@ -214,7 +214,7 @@ export default class DevServer extends Server {
     return this.serverComponentsHmrCache
   }
 
-  protected getRouteMatchers(): RouteMatcherManager {
+  protected getRouteMatchers(): DevRouteMatcherManager {
     const { pagesDir, appDir } = findPagesDir(this.dir)
 
     const ensurer: RouteEnsurer = {
@@ -298,6 +298,10 @@ export default class DevServer extends Server {
 
     await super.prepareImpl()
     await this.matchers.reload()
+
+    if (process.env.NEXT_PRECOMPILE_ROUTES === '1') {
+      await this.precompileRoutes()
+    }
 
     this.ready?.resolve()
     this.ready = undefined
@@ -651,9 +655,11 @@ export default class DevServer extends Server {
         .catch(() => false))
     ) {
       try {
-        instrumentationModule = await require(
-          pathJoin(this.distDir, 'server', INSTRUMENTATION_HOOK_FILENAME)
-        )
+        instrumentationModule = await require(pathJoin(
+          this.distDir,
+          'server',
+          INSTRUMENTATION_HOOK_FILENAME
+        ))
       } catch (err: any) {
         err.message = `An error occurred while loading instrumentation hook: ${err.message}`
         throw err
@@ -913,5 +919,30 @@ export default class DevServer extends Server {
     const err = args[0]
     // Safe catch to avoid floating promises
     this.logErrorWithOriginalStack(err, 'app-dir').catch(() => {})
+  }
+
+  private async precompileRoutes() {
+    const routeMatchers = this.getRouteMatchers()
+    await routeMatchers.reload()
+
+    Log.wait('--experimental-precompile-routes is enabled, precompiling...')
+
+    for (const matcher of [
+      ...routeMatchers.matchers.static,
+      ...routeMatchers.matchers.dynamic,
+    ]) {
+      try {
+        await this.ensureMiddleware(matcher.definition.page)
+
+        await this.ensurePage({
+          definition: matcher.definition,
+          page: matcher.definition.page,
+          clientOnly: false,
+          url: matcher.definition.page,
+        })
+      } catch (err) {
+        Log.error(`Failed to precompile route ${matcher.definition.page}:`)
+      }
+    }
   }
 }
