@@ -43,6 +43,7 @@ type NextDevOptions = {
   experimentalHttpsCert?: string
   experimentalHttpsCa?: string
   experimentalUploadTrace?: string
+  precompileRoutes?: boolean
 }
 
 type PortSource = 'cli' | 'default' | 'env'
@@ -215,6 +216,10 @@ const nextDev = async (
     hostname: host,
   }
 
+  if (options.precompileRoutes) {
+    process.env.NEXT_DEV_PRECOMPILE_ROUTES = '1'
+  }
+
   if (options.turbo) {
     process.env.TURBOPACK = '1'
   }
@@ -256,6 +261,7 @@ const nextDev = async (
         env: {
           ...defaultEnv,
           TURBOPACK: process.env.TURBOPACK,
+          NEXT_DEV_PRECOMPILE_ROUTES: process.env.NEXT_DEV_PRECOMPILE_ROUTES,
           NEXT_PRIVATE_WORKER: '1',
           NODE_EXTRA_CA_CERTS: startServerOptions.selfSignedCertificate
             ? startServerOptions.selfSignedCertificate.rootCA

@@ -9,7 +9,6 @@ import type { BaseNextRequest, BaseNextResponse } from '../base-http'
 import type { FallbackMode, MiddlewareRoutingItem } from '../base-server'
 import type { FunctionComponent } from 'react'
 import type { RouteDefinition } from '../future/route-definitions/route-definition'
-import type { RouteMatcherManager } from '../future/route-matcher-managers/route-matcher-manager'
 import type {
   NextParsedUrlQuery,
   NextUrlWithParsedQuery,
@@ -194,7 +193,7 @@ export default class DevServer extends Server {
     this.appDir = appDir
   }
 
-  protected getRouteMatchers(): RouteMatcherManager {
+  protected getRouteMatchers(): DevRouteMatcherManager {
     const { pagesDir, appDir } = findPagesDir(this.dir)
 
     const ensurer: RouteEnsurer = {
@@ -281,6 +280,10 @@ export default class DevServer extends Server {
       .traceChild('run-instrumentation-hook')
       .traceAsyncFn(() => this.runInstrumentationHookIfAvailable())
     await this.matchers.reload()
+
+    if (process.env.NEXT_PRECOMPILE_ROUTES === '1') {
+      await this.precompileRoutes()
+    }
 
     // Store globals again to preserve changes made by the instrumentation hook.
     this.storeGlobals()
@@ -857,5 +860,27 @@ export default class DevServer extends Server {
 
   async getCompilationError(page: string): Promise<any> {
     return await this.bundlerService.getCompilationError(page)
+  }
+
+  private async precompileRoutes() {
+    const routeMatchers = this.getRouteMatchers()
+    await routeMatchers.reload()
+    Log.wait('--experimental-precompile-routes is enabled, precompiling...')
+    for (const matcher of [
+      ...routeMatchers.matchers.static,
+      ...routeMatchers.matchers.dynamic,
+    ]) {
+      try {
+        await this.ensureMiddleware(matcher.definition.page)
+        await this.ensurePage({
+          definition: matcher.definition,
+          page: matcher.definition.page,
+          clientOnly: false,
+          url: matcher.definition.page,
+        })
+      } catch (err) {
+        Log.error(`Failed to precompile route ${matcher.definition.page}:`)
+      }
+    }
   }
 }

@@ -174,6 +174,10 @@ program
     '--experimental-upload-trace, <traceUrl>',
     'Reports a subset of the debugging trace to a remote HTTP URL. Includes sensitive data.'
   )
+  .option(
+    '--precompile-routes',
+    'Precompiles all routes before starting the server in development mode.'
+  )
   .action((directory, options, { _optionValueSources }) => {
     const portSource = _optionValueSources.port
     import('../cli/next-dev.js').then((mod) =>
